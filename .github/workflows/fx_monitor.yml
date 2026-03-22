@@ -35,7 +35,8 @@ jobs:
         env:
           FX_API_KEY: ${{ secrets.FX_API_KEY }}
           WHATSAPP_NUMBER: ${{ secrets.WHATSAPP_NUMBER }}
-          CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
+          GREENAPI_INSTANCE_ID: ${{ secrets.GREENAPI_INSTANCE_ID }}
+          GREENAPI_API_TOKEN: ${{ secrets.GREENAPI_API_TOKEN }}
         run: python fx_monitor.py
 
       # Save the day-open file back so next run can use it

@@ -1,7 +1,7 @@
 """
 CAD Exchange Rate Monitor
 Fetches CAD rates vs USD, GBP, EUR, HKD every hour.
-Compares to day-open price and sends summary via WhatsApp (CallMeBot).
+Compares to day-open price and sends summary via WhatsApp (Green API).
 """
 
 import os
@@ -17,13 +17,14 @@ BASE_CURRENCY = "CAD"
 # ExchangeRate-API (free, 1500 req/month)
 FX_API_URL = f"https://v6.exchangerate-api.com/v6/{{api_key}}/latest/{BASE_CURRENCY}"
 
-# CallMeBot WhatsApp API
-CALLMEBOT_URL = "https://api.callmebot.com/whatsapp.php"
+# Green API WhatsApp
+GREENAPI_URL = "https://api.green-api.com/waInstance{instance_id}/sendMessage/{api_token}"
 
 # Environment variables (set as GitHub Secrets)
 FX_API_KEY = os.environ.get("FX_API_KEY", "")
-WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "")  # with country code, e.g. 12895551234
-CALLMEBOT_API_KEY = os.environ.get("CALLMEBOT_API_KEY", "")
+WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "")  # with country code, no +, e.g. 16475630107
+GREENAPI_INSTANCE_ID = os.environ.get("GREENAPI_INSTANCE_ID", "")
+GREENAPI_API_TOKEN = os.environ.get("GREENAPI_API_TOKEN", "")
 
 # File to cache the day-open prices (persisted via GitHub Actions cache)
 OPEN_PRICES_FILE = "day_open_prices.json"
@@ -102,17 +103,24 @@ def format_message(current: dict, day_open: dict) -> str:
 
 
 def send_whatsapp(message: str):
-    """Send message via CallMeBot WhatsApp API."""
-    params = urllib.parse.urlencode({
-        "phone": WHATSAPP_NUMBER,
-        "text": message,
-        "apikey": CALLMEBOT_API_KEY,
-    })
-    url = f"{CALLMEBOT_URL}?{params}"
-    req = urllib.request.Request(url)
+    """Send message via Green API WhatsApp."""
+    url = GREENAPI_URL.format(
+        instance_id=GREENAPI_INSTANCE_ID,
+        api_token=GREENAPI_API_TOKEN,
+    )
+    payload = json.dumps({
+        "chatId": f"{WHATSAPP_NUMBER}@c.us",
+        "message": message,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=15) as resp:
         result = resp.read().decode()
-        print(f"CallMeBot response: {result}")
+        print(f"Green API response: {result}")
 
 
 def main():
@@ -126,7 +134,7 @@ def main():
     message = format_message(current, day_open)
     print(f"\n📨 Message:\n{message}\n")
 
-    if WHATSAPP_NUMBER and CALLMEBOT_API_KEY:
+    if WHATSAPP_NUMBER and GREENAPI_INSTANCE_ID and GREENAPI_API_TOKEN:
         send_whatsapp(message)
         print("✅ WhatsApp message sent!")
     else:
