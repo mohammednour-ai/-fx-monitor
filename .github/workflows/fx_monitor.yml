@@ -1,0 +1,46 @@
+name: CAD FX Monitor
+
+on:
+  schedule:
+    # Run every hour from 8am to 10pm EST (13:00-03:00 UTC next day)
+    # Adjust cron to your preferred hours
+    - cron: '0 * * * *'  # Every hour, on the hour
+
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  check-rates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # Restore cached day-open prices from earlier runs today
+      - name: Restore day-open cache
+        uses: actions/cache@v4
+        with:
+          path: day_open_prices.json
+          # Key changes daily so cache resets each morning
+          key: fx-open-${{ github.run_id }}
+          restore-keys: |
+            fx-open-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run FX Monitor
+        env:
+          FX_API_KEY: ${{ secrets.FX_API_KEY }}
+          WHATSAPP_NUMBER: ${{ secrets.WHATSAPP_NUMBER }}
+          CALLMEBOT_API_KEY: ${{ secrets.CALLMEBOT_API_KEY }}
+        run: python fx_monitor.py
+
+      # Save the day-open file back so next run can use it
+      - name: Save day-open cache
+        uses: actions/cache/save@v4
+        with:
+          path: day_open_prices.json
+          key: fx-open-${{ github.run_id }}
