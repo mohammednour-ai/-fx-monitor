@@ -37,6 +37,7 @@ jobs:
           WHATSAPP_NUMBER: ${{ secrets.WHATSAPP_NUMBER }}
           GREENAPI_INSTANCE_ID: ${{ secrets.GREENAPI_INSTANCE_ID }}
           GREENAPI_API_TOKEN: ${{ secrets.GREENAPI_API_TOKEN }}
+          GREENAPI_API_URL: ${{ secrets.GREENAPI_API_URL }}
         run: python fx_monitor.py
 
       # Save the day-open file back so next run can use it

@@ -17,14 +17,12 @@ BASE_CURRENCY = "CAD"
 # ExchangeRate-API (free, 1500 req/month)
 FX_API_URL = f"https://v6.exchangerate-api.com/v6/{{api_key}}/latest/{BASE_CURRENCY}"
 
-# Green API WhatsApp
-GREENAPI_URL = "https://api.green-api.com/waInstance{instance_id}/sendMessage/{api_token}"
-
 # Environment variables (set as GitHub Secrets)
 FX_API_KEY = os.environ.get("FX_API_KEY", "")
 WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "")  # with country code, no +, e.g. 16475630107
 GREENAPI_INSTANCE_ID = os.environ.get("GREENAPI_INSTANCE_ID", "")
 GREENAPI_API_TOKEN = os.environ.get("GREENAPI_API_TOKEN", "")
+GREENAPI_API_URL = os.environ.get("GREENAPI_API_URL", "https://api.green-api.com")
 
 # File to cache the day-open prices (persisted via GitHub Actions cache)
 OPEN_PRICES_FILE = "day_open_prices.json"
@@ -104,10 +102,7 @@ def format_message(current: dict, day_open: dict) -> str:
 
 def send_whatsapp(message: str):
     """Send message via Green API WhatsApp."""
-    url = GREENAPI_URL.format(
-        instance_id=GREENAPI_INSTANCE_ID,
-        api_token=GREENAPI_API_TOKEN,
-    )
+    url = f"{GREENAPI_API_URL}/waInstance{GREENAPI_INSTANCE_ID}/sendMessage/{GREENAPI_API_TOKEN}"
     payload = json.dumps({
         "chatId": f"{WHATSAPP_NUMBER}@c.us",
         "message": message,
