@@ -29,7 +29,7 @@ OPEN_PRICES_FILE = "day_open_prices.json"
 
 
 def fetch_rates() -> dict:
-    """Fetch current CAD exchange rates from ExchangeRate-API."""
+    """Fetch CAD rates and invert them to get X/CAD (e.g. USD/CAD, GBP/CAD)."""
     url = FX_API_URL.format(api_key=FX_API_KEY)
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req, timeout=15) as resp:
@@ -39,7 +39,8 @@ def fetch_rates() -> dict:
         raise RuntimeError(f"API error: {data}")
 
     rates = data["conversion_rates"]
-    return {pair: rates[pair] for pair in PAIRS}
+    # Invert: 1 CAD = X foreign → 1 foreign = 1/X CAD
+    return {pair: 1 / rates[pair] for pair in PAIRS}
 
 
 def load_day_open() -> dict | None:
@@ -90,13 +91,13 @@ def format_message(current: dict, day_open: dict) -> str:
         arrow = "🟢" if change > 0 else "🔴" if change < 0 else "⚪"
         sign = "+" if change >= 0 else ""
 
-        lines.append(f"{arrow} CAD/{pair}")
+        lines.append(f"{arrow} {pair}/CAD")
         lines.append(f"   Now:  {curr_rate:.4f}")
         lines.append(f"   Open: {open_rate:.4f}")
         lines.append(f"   Chg:  {sign}{change:.4f} ({sign}{pct:.2f}%)")
         lines.append("")
 
-    lines.append("1 CAD = X units of foreign currency")
+    lines.append("1 unit of foreign currency = X CAD")
     return "\n".join(lines)
 
 
