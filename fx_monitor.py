@@ -1,7 +1,7 @@
 """
 CAD Exchange Rate Monitor
-Fetches CAD rates vs USD, GBP, EUR, HKD every hour.
-Compares to day-open price and sends summary via WhatsApp (Green API).
+Fetches CAD rates vs USD, GBP, EUR, HKD every 30 minutes during market hours.
+Only sends WhatsApp alert when at least one rate has moved from the day open.
 """
 
 import os
@@ -14,12 +14,15 @@ from datetime import datetime, timezone
 PAIRS = ["USD", "GBP", "EUR", "HKD"]
 BASE_CURRENCY = "CAD"
 
+# Minimum change (in rate units) to trigger a send — filters out zero-movement runs
+MIN_CHANGE_THRESHOLD = 0.0001
+
 # ExchangeRate-API (free, 1500 req/month)
 FX_API_URL = f"https://v6.exchangerate-api.com/v6/{{api_key}}/latest/{BASE_CURRENCY}"
 
 # Environment variables (set as GitHub Secrets)
 FX_API_KEY = os.environ.get("FX_API_KEY", "")
-WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "")  # with country code, no +, e.g. 16475630107
+WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "")
 GREENAPI_INSTANCE_ID = os.environ.get("GREENAPI_INSTANCE_ID", "")
 GREENAPI_API_TOKEN = os.environ.get("GREENAPI_API_TOKEN", "")
 GREENAPI_API_URL = os.environ.get("GREENAPI_API_URL", "https://api.green-api.com")
@@ -77,6 +80,14 @@ def get_day_open(current_rates: dict) -> dict:
     return current_rates
 
 
+def has_meaningful_change(current: dict, day_open: dict) -> bool:
+    """Return True if at least one pair has moved beyond the minimum threshold."""
+    return any(
+        abs(current[pair] - day_open[pair]) >= MIN_CHANGE_THRESHOLD
+        for pair in PAIRS
+    )
+
+
 def format_message(current: dict, day_open: dict) -> str:
     """Build a clean WhatsApp message with rates and changes."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -126,6 +137,10 @@ def main():
 
     day_open = get_day_open(current)
     print(f"   Day open rates: {day_open}")
+
+    if not has_meaningful_change(current, day_open):
+        print("⏸️  No meaningful rate change since open. Skipping WhatsApp.")
+        return
 
     message = format_message(current, day_open)
     print(f"\n📨 Message:\n{message}\n")

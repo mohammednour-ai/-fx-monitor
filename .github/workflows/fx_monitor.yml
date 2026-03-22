@@ -4,7 +4,7 @@ on:
   schedule:
     # Run every hour from 8am to 10pm EST (13:00-03:00 UTC next day)
     # Adjust cron to your preferred hours
-    - cron: '0,30 * * * *'  # Every 30 minutes
+    - cron: '0,30 8-22 * * 1-5'  # Every 30 min, 8am-10:30pm UTC, Mon-Fri
 
   workflow_dispatch:  # Allow manual trigger for testing
 
